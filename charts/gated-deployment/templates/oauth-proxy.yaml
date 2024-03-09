@@ -1,0 +1,82 @@
+# https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/docs/examples/auth/oauth-external-auth/oauth2-proxy.yaml
+# https://kubernetes.github.io/ingress-nginx/examples/auth/oauth-external-auth/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: oauth2-proxy-{{ .Release.Name }}
+  name: oauth2-proxy-{{ .Release.Name }}
+  namespace: kube-system
+spec:
+  replicas: {{ .Values.oauth.replicas }}
+  selector:
+    matchLabels:
+      app: oauth2-proxy-{{ .Release.Name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy-{{ .Release.Name }}
+    spec:
+      restartPolicy: Always
+      containers:
+        - args:
+            - --provider=oidc
+            - --email-domain={{ .Values.oauth.emailDomain }}
+            - --scope={{ .Values.oauth.scope }}
+            - --upstream=file:///dev/null
+            - --http-address=0.0.0.0:4180
+            - --oidc-issuer-url={{ .Values.oauth.oidcIssueUrl }}
+            - --cookie-secret={{ .Values.oauth.cookieSecret }}
+            - --client-id={{ .Values.oauth.clientId }}
+            - --redirect-url={{ .Values.oauth.redirectUrl }}
+            - --client-secret={{ .Values.oauth.clientSecret }}
+            - --auth-logging=1
+            - --standard-logging=1
+            - --request-logging=1
+            - --cookie-secure=true
+            - --cookie-csrf-per-request=true
+            - --cookie-csrf-expire=5m
+            # The following flag is removed due to potential exploit that allows unverified email addresses
+            #- --insecure-oidc-allow-unverified-email
+          image: "{{ .Values.oauth.image.repository }}:{{ .Values.oauth.image.tag }}"
+          imagePullPolicy: "{{ .Values.oauth.image.pullPolicy }}"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+            limits:
+              memory: 128Mi
+          name: oauth2-proxy-{{ .Release.Name }}
+          ports:
+            - containerPort: 4180
+              protocol: TCP
+---
+# apiVersion: policy/v1
+# kind: PodDisruptionBudget
+# metadata:
+#   name: oauth2-proxy-{{ .Release.Name }}
+#   namespace: kube-system
+# spec:
+#   minAvailable: 1
+#   selector:
+#     matchLabels:
+#       app: oauth2-proxy-{{ .Release.Name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oauth2-proxy-{{ .Release.Name }}
+  namespace: kube-system
+spec:
+  ports:
+    - name: http
+      port: 4180
+      protocol: TCP
+      targetPort: 4180
+  selector:
+    app: oauth2-proxy-{{ .Release.Name }}

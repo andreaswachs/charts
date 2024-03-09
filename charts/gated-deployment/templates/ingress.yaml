@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: chatgpt-oauth
+  name: oauth-ingress-{{ .Release.Name }}
   namespace: kube-system
   annotations:
     kubernetes.io/ingress.class: "nginx"
@@ -9,22 +9,22 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: chatgpt.wachs.work
+    - host: {{ .Values.ingress.host }}
       http:
         paths:
           - path: /oauth2
             pathType: Prefix
             backend:
               service:
-                name: oauth2-proxy-chatgpt
+                name: oauth2-proxy-{{ .Release.Name }}
                 port:
                   number: 4180
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: chatgpt
-  namespace: public
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.deployment.metadata.namespace }}
   annotations:
     ingress.kubernetes.io/force-ssl-redirect: "true"
     kubernetes.io/ingress.class: "nginx"
@@ -34,16 +34,16 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - chatgpt.wachs.work
-      secretName: chatgpt-wachs-work-tls-cert-prod
+        - "{{ .Values.ingress.host }}"
+      secretName: {{ include "gated-service.secretName" . }}
   rules:
-    - host: chatgpt.wachs.work
+    - host: "{{ .Values.ingress.host }}"
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: chatgpt-svc
+                name: {{ .Values.service.metadata.name }}
                 port:
-                  number: 80
+                  number: {{ (index (.Values.service.spec.ports) 0).port }}

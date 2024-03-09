@@ -1,5 +1,5 @@
 apiVersion: v2
-name: gated-service
+name: gated-deployment
 description: >-
   Deploy a gated HTTP(S) service. Gate it by an auth0 application
   where the oauth2 proxy is used to authenticate users

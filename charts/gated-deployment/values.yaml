@@ -1,0 +1,33 @@
+deployment: {}
+service: {}
+
+tlsCert:
+  issuer:
+    name: ""
+    kind: ""
+    group: ""
+    # name: letsencrypt-prod
+    # kind: ClusterIssuer
+    # group: cert-manager.io
+  name: ""
+  secretName: ""
+
+ingress:
+  host: "helloworld.np.wachs.work"
+
+oauth:
+  replicas: 1
+  ingress:
+    annotations: {}
+  image:
+    repository: quay.io/oauth2-proxy/oauth2-proxy
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  clientSecret: ""
+  clientId: ""
+  cookieSecret: ""
+  oidcIssueUrl: ""
+  redirectUrl: ""
+  scope: "openid profile email"
+  emailDomain: ""
