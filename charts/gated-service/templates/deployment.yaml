@@ -1,0 +1,6 @@
+{{- if .Values.deployment }} 
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{ .Values.deployment.metadata | toYaml | nindent 2}}
+spec: {{ .Values.deployment.spec | toYaml | nindent 2}}
+{{- end }}
