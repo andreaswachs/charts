@@ -1,0 +1,4 @@
+apiVersion: v1
+kind: Service
+metadata: {{ .Values.service.metadata | toYaml | nindent 2}}
+spec: {{ .Values.service.spec | toYaml | nindent 2}}
