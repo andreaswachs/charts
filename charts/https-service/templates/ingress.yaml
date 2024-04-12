@@ -12,7 +12,7 @@ spec:
   tls:
     - hosts:
         - "{{ .Values.ingress.host }}"
-      secretName: {{ include "gated-service.secretName" . }}
+      secretName: {{ include "https-service.secretName" . }}
   rules:
     - host: "{{ .Values.ingress.host }}"
       http:

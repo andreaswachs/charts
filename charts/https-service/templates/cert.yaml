@@ -4,7 +4,7 @@ metadata:
   name: "{{ .Release.Name }}-tls-crt-prod"
   namespace: "{{ .Values.deployment.metadata.namespace }}"
 spec:
-  secretName: {{ include "gated-service.secretName" . }}
+  secretName: {{ include "https-service.secretName" . }}
   duration: 2160h # 90d
   renewBefore: 360h # 15d
   dnsNames:

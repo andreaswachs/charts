@@ -3,10 +3,10 @@ entries:
   gated-deployment:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-04-12T07:57:55.805085+02:00"
+    created: "2024-04-12T08:07:32.519186+02:00"
     description: Deploy a gated HTTP(S) service. Gate it by an auth0 application where
       the oauth2 proxy is used to authenticate users
-    digest: 5926db014ab1abdbe59f33d1ecfb59364228e9b977236db72a95d9054bd82694
+    digest: 825ee339c94130b55a68ae542add9ad20388fb5d5cb3e8677741bbf4e59e0691
     name: gated-deployment
     type: application
     urls:
@@ -15,14 +15,14 @@ entries:
   https-service:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-04-12T07:57:55.805398+02:00"
+    created: "2024-04-12T08:07:32.520578+02:00"
     description: Deploy a HTTP service. TLS Certificates are provisioned with cert-manager
       through the nginx ingress- controller. The HTTP service need only to expose
       the port 80.
-    digest: 8df7b3c4507dc593c2f7065dc40ba91cae295143f7b2ddc6873b00bad926b2cb
+    digest: 9a6e1c4e28d80e53641eaa64b4f505f59bee38fd0305907c4498c8c3cc5875b8
     name: https-service
     type: application
     urls:
     - https://andreaswachs.github.io/charts/packages/https-service-0.1.0.tgz
     version: 0.1.0
-generated: "2024-04-12T07:57:55.804481+02:00"
+generated: "2024-04-12T08:07:32.518648+02:00"
