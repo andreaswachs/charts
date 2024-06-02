@@ -21,7 +21,9 @@ spec:
     metadata:
       labels:
         app: oauth2-proxy-{{ .Release.Name }}
+      {{- if .Values.oauth.deployment.annotations }}
       annotations: {{ .Values.oauth.annotations | toYaml | nindent 8}}
+      {{- end }}
     spec:
       restartPolicy: Always
       containers:
@@ -53,7 +55,7 @@ spec:
           image: "{{ .Values.oauth.image.repository }}:{{ .Values.oauth.image.tag }}"
           imagePullPolicy: "{{ .Values.oauth.image.pullPolicy }}"
           env:
-            {{ if .Values.oauth.configStrategy | default "args" | eq "env" }}
+            {{- if .Values.oauth.configStrategy | default "args" | eq "env" }}
             - name: OAUTH2_PROXY_CLIENT_ID
               value: {{ .Values.oauth.clientId | quote }}
             - name: OAUTH2_PROXY_CLIENT_SECRET
@@ -62,9 +64,9 @@ spec:
               value: {{ .Values.oauth.cookieSecret | quote }}
             - name: OAUTH2_PROXY_OIDC_ISSUER_URL
               value: {{ .Values.oauth.oidcIssueUrl | quote }}
-            - NAME: OAUTH2_PROXY_EMAIL_DOMAINS
+            - name: OAUTH2_PROXY_EMAIL_DOMAINS
               value: {{ .Values.oauth.emailDomain | quote }}
-            - NAME: OAUTH2_PROXY_SCOPE
+            - name: OAUTH2_PROXY_SCOPE
               value: {{ .Values.oauth.scope | quote }}
             {{- end }}
           resources:
