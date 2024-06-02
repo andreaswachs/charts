@@ -23,8 +23,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ .Release.Name }}
-  namespace: {{ .Values.deployment.metadata.namespace }}
+  name: {{ .Release.Name | quote }}
+  namespace: {{ .Values.deployment.metadata.namespace | quote }}
   annotations:
     ingress.kubernetes.io/force-ssl-redirect: "true"
     kubernetes.io/ingress.class: "nginx"
@@ -34,16 +34,16 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - "{{ .Values.ingress.host }}"
+        - {{ .Values.ingress.host | quote}}
       secretName: {{ include "gated-service.secretName" . }}
   rules:
-    - host: "{{ .Values.ingress.host }}"
+    - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.service.metadata.name }}
+                name: {{ .Values.service.metadata.name | quote }}
                 port:
                   number: {{ (index (.Values.service.spec.ports) 0).port }}
