@@ -22,7 +22,7 @@ spec:
       labels:
         app: oauth2-proxy-{{ .Release.Name }}
       {{- if .Values.oauth.deployment.annotations }}
-      annotations: {{ .Values.oauth.annotations | toYaml | nindent 8}}
+      annotations: {{ .Values.oauth.deployment.annotations | toYaml | nindent 8}}
       {{- end }}
     spec:
       restartPolicy: Always
