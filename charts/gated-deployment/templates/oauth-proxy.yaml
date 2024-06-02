@@ -6,7 +6,7 @@ metadata:
   labels:
     app: oauth2-proxy-{{ .Release.Name }}
   name: oauth2-proxy-{{ .Release.Name }}
-  namespace: kube-system
+  namespace: {{ .Values.oauth.deployment.namespace | default "kube-system" }}
 spec:
   replicas: {{ .Values.oauth.replicas }}
   selector:
@@ -21,30 +21,52 @@ spec:
     metadata:
       labels:
         app: oauth2-proxy-{{ .Release.Name }}
+      annotations: {{ .Values.oauth.annotations | toYaml | nindent 8}}
     spec:
       restartPolicy: Always
       containers:
         - args:
             - --provider=oidc
-            - --email-domain={{ .Values.oauth.emailDomain }}
-            - --scope={{ .Values.oauth.scope }}
             - --upstream=file:///dev/null
             - --http-address=0.0.0.0:4180
-            - --oidc-issuer-url={{ .Values.oauth.oidcIssueUrl }}
-            - --cookie-secret={{ .Values.oauth.cookieSecret }}
-            - --client-id={{ .Values.oauth.clientId }}
-            - --redirect-url={{ .Values.oauth.redirectUrl }}
-            - --client-secret={{ .Values.oauth.clientSecret }}
             - --auth-logging=1
             - --standard-logging=1
             - --request-logging=1
             - --cookie-secure=true
             - --cookie-csrf-per-request=true
             - --cookie-csrf-expire=5m
-            # The following flag is removed due to potential exploit that allows unverified email addresses
-            #- --insecure-oidc-allow-unverified-email
+            {{- if .Values.oauth.configStrategy | default "args" | eq "args" }}
+            {{- /*  Enable use of multiple email domains */}}
+            {{- range split "," .Values.oauth.emailDomain }}
+            - --email-domain={{ . }}
+            {{- end }}
+            - --scope={{ .Values.oauth.scope }}
+            - --oidc-issuer-url={{ .Values.oauth.oidcIssueUrl }}
+            - --cookie-secret={{ .Values.oauth.cookieSecret }}
+            - --client-id={{ .Values.oauth.clientId }}
+            - --redirect-url={{ .Values.oauth.redirectUrl }}
+            - --client-secret={{ .Values.oauth.clientSecret }}
+            {{- end }}
+            {{- if .Values.oauth.options.allowUnverifiedEmail | default false }}
+            - --insecure-oidc-allow-unverified-email
+            {{- end }}
           image: "{{ .Values.oauth.image.repository }}:{{ .Values.oauth.image.tag }}"
           imagePullPolicy: "{{ .Values.oauth.image.pullPolicy }}"
+          env:
+            {{ if .Values.oauth.configStrategy | default "args" | eq "env" }}
+            - name: OAUTH2_PROXY_CLIENT_ID
+              value: {{ .Values.oauth.clientId | quote }}
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              value: {{ .Values.oauth.clientSecret | quote }}
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              value: {{ .Values.oauth.cookieSecret | quote }}
+            - name: OAUTH2_PROXY_OIDC_ISSUER_URL
+              value: {{ .Values.oauth.oidcIssueUrl | quote }}
+            - NAME: OAUTH2_PROXY_EMAIL_DOMAINS
+              value: {{ .Values.oauth.emailDomain | quote }}
+            - NAME: OAUTH2_PROXY_SCOPE
+              value: {{ .Values.oauth.scope | quote }}
+            {{- end }}
           resources:
             requests:
               cpu: 10m
@@ -56,22 +78,24 @@ spec:
             - containerPort: 4180
               protocol: TCP
 ---
-# apiVersion: policy/v1
-# kind: PodDisruptionBudget
-# metadata:
-#   name: oauth2-proxy-{{ .Release.Name }}
-#   namespace: kube-system
-# spec:
-#   minAvailable: 1
-#   selector:
-#     matchLabels:
-#       app: oauth2-proxy-{{ .Release.Name }}
+{{- if .Values.oauth.deployment.pdb.enabled | default false }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oauth2-proxy-{{ .Release.Name }}
+  namespace: {{ .Values.oauth.deployment.namespace | default "kube-system" }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: oauth2-proxy-{{ .Release.Name }}
+{{- end }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: oauth2-proxy-{{ .Release.Name }}
-  namespace: kube-system
+  namespace: {{ .Values.oauth.deployment.namespace | default "kube-system" }}
 spec:
   ports:
     - name: http

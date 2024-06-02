@@ -24,6 +24,16 @@ oauth:
     tag: latest
     pullPolicy: IfNotPresent
 
+  configStrategy: "args" # Either "args" or "env"
+
+  deployment:
+    namespace: ""
+    pdb:
+      enabled: false
+
+  options:
+    allowUnverifiedEmails: false
+
   clientSecret: ""
   clientId: ""
   cookieSecret: ""
