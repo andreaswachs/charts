@@ -6,7 +6,7 @@ metadata:
   labels:
     app: oauth2-proxy-{{ .Release.Name }}
   name: oauth2-proxy-{{ .Release.Name }}
-  namespace: kube-system
+  namespace: {{ .Values.oauth.deployment.namespace | default "kube-system" }}
 spec:
   replicas: {{ .Values.oauth.replicas }}
   selector:
@@ -78,22 +78,24 @@ spec:
             - containerPort: 4180
               protocol: TCP
 ---
-# apiVersion: policy/v1
-# kind: PodDisruptionBudget
-# metadata:
-#   name: oauth2-proxy-{{ .Release.Name }}
-#   namespace: kube-system
-# spec:
-#   minAvailable: 1
-#   selector:
-#     matchLabels:
-#       app: oauth2-proxy-{{ .Release.Name }}
+{{- if .Values.oauth.deployment.pdb.enabled | default false }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oauth2-proxy-{{ .Release.Name }}
+  namespace: {{ .Values.oauth.deployment.namespace | default "kube-system" }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: oauth2-proxy-{{ .Release.Name }}
+{{- end }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: oauth2-proxy-{{ .Release.Name }}
-  namespace: kube-system
+  namespace: {{ .Values.oauth.deployment.namespace | default "kube-system" }}
 spec:
   ports:
     - name: http
