@@ -21,6 +21,7 @@ spec:
     metadata:
       labels:
         app: oauth2-proxy-{{ .Release.Name }}
+      annotations: {{ .Values.oauth.annotations | toYaml | nindent 8}}
     spec:
       restartPolicy: Always
       containers:
