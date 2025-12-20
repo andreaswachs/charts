@@ -1,0 +1,26 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 200
+    level: warning
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  document-start: disable
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+ignore: |
+  charts/*/charts/
+  charts/*/templates/

@@ -1,0 +1,96 @@
+name: Publish Charts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'charts/**'
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  detect-changes:
+    name: Detect Changed Charts
+    runs-on: ubuntu-latest
+    outputs:
+      charts: ${{ steps.changes.outputs.charts }}
+      has_changes: ${{ steps.changes.outputs.has_changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed charts
+        id: changes
+        run: |
+          # Compare with previous commit on main
+          charts=$(./scripts/changed-charts.sh HEAD~1 HEAD)
+          if [ -n "$charts" ]; then
+            echo "charts=$charts" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changed charts: $charts"
+          else
+            echo "charts=" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No chart changes detected"
+          fi
+
+  publish:
+    name: Publish to GHCR
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Package and push charts
+        run: |
+          charts="${{ needs.detect-changes.outputs.charts }}"
+          echo "Publishing charts: $charts"
+
+          # Lowercase the repository name for OCI compliance
+          repo=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
+          for chart in $charts; do
+            name=$(basename "$chart")
+            version=$(grep '^version:' "$chart/Chart.yaml" | awk '{print $2}' | tr -d '"' | tr -d "'")
+
+            echo "::group::Publishing $name v$version"
+
+            # Package the chart
+            helm package "$chart" --destination .
+
+            # Push to GHCR
+            helm push "${name}-${version}.tgz" "oci://${{ env.REGISTRY }}/${repo}"
+
+            echo "✅ Published $name v$version to oci://${{ env.REGISTRY }}/${repo}/${name}:${version}"
+            echo "::endgroup::"
+          done
+
+      - name: Summary
+        run: |
+          charts="${{ needs.detect-changes.outputs.charts }}"
+          repo=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
+          echo "## 📦 Published Charts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          for chart in $charts; do
+            name=$(basename "$chart")
+            version=$(grep '^version:' "$chart/Chart.yaml" | awk '{print $2}' | tr -d '"' | tr -d "'")
+            echo "- \`${name}\` v${version} → \`oci://${{ env.REGISTRY }}/${repo}/${name}:${version}\`" >> $GITHUB_STEP_SUMMARY
+          done
