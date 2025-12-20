@@ -1,0 +1,6 @@
+apiVersion: v2
+name: manifests
+description: A Helm chart for deploying arbitrary Kubernetes resources from values
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

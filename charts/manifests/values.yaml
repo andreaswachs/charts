@@ -1,0 +1,17 @@
+# resources is an array of Kubernetes resource objects to deploy
+# Each item should be a complete Kubernetes resource definition
+resources: []
+#   - apiVersion: v1
+#     kind: ConfigMap
+#     metadata:
+#       name: example-config
+#     data:
+#       key: value
+#
+#   - apiVersion: v1
+#     kind: Secret
+#     metadata:
+#       name: example-secret
+#     type: Opaque
+#     stringData:
+#       password: secret123

@@ -1,0 +1,6 @@
+{{- range $index, $resource := .Values.resources }}
+{{- if $index }}
+---
+{{- end }}
+{{ $resource | toYaml }}
+{{- end }}
