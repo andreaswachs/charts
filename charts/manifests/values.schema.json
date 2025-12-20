@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/charts/manifests/values.schema.json",
+  "title": "Manifests Chart Values",
+  "description": "Schema for the manifests Helm chart values",
+  "type": "object",
+  "properties": {
+    "resources": {
+      "type": "array",
+      "description": "Array of Kubernetes resource objects to deploy",
+      "items": {
+        "$ref": "#/$defs/kubernetesResource"
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "kubernetesResource": {
+      "type": "object",
+      "description": "A Kubernetes resource definition",
+      "required": ["apiVersion", "kind", "metadata"],
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "description": "API version of the resource (e.g., 'v1', 'apps/v1')",
+          "minLength": 1,
+          "examples": ["v1", "apps/v1", "networking.k8s.io/v1"]
+        },
+        "kind": {
+          "type": "string",
+          "description": "Kind of the resource (e.g., 'ConfigMap', 'Deployment')",
+          "minLength": 1,
+          "examples": ["ConfigMap", "Secret", "Deployment", "Service"]
+        },
+        "metadata": {
+          "$ref": "#/$defs/objectMeta"
+        }
+      },
+      "additionalProperties": true
+    },
+    "objectMeta": {
+      "type": "object",
+      "description": "Kubernetes object metadata",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the resource",
+          "minLength": 1,
+          "maxLength": 253,
+          "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace of the resource",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        },
+        "labels": {
+          "type": "object",
+          "description": "Labels for the resource",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "annotations": {
+          "type": "object",
+          "description": "Annotations for the resource",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

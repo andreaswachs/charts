@@ -202,7 +202,7 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Install helm-unittest
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false --version v1.0.3
 
       - name: Run unit tests
         id: test
@@ -318,24 +318,36 @@ jobs:
     steps:
       - name: Post PR comment
         uses: actions/github-script@v7
+        env:
+          CHARTS: ${{ needs.detect-changes.outputs.charts }}
+          LINT_RESULT: ${{ needs.lint.outputs.result }}
+          LINT_DETAILS: ${{ needs.lint.outputs.details }}
+          FORMAT_RESULT: ${{ needs.format.outputs.result }}
+          FORMAT_DETAILS: ${{ needs.format.outputs.details }}
+          TEMPLATE_RESULT: ${{ needs.template.outputs.result }}
+          TEMPLATE_DETAILS: ${{ needs.template.outputs.details }}
+          TEST_RESULT: ${{ needs.unit-tests.outputs.result }}
+          TEST_DETAILS: ${{ needs.unit-tests.outputs.details }}
+          VERSION_RESULT: ${{ needs.version-check.outputs.result }}
+          VERSION_DETAILS: ${{ needs.version-check.outputs.details }}
         with:
           script: |
-            const charts = '${{ needs.detect-changes.outputs.charts }}'.split(' ').filter(c => c);
+            const charts = (process.env.CHARTS || '').split(' ').filter(c => c);
 
-            const lintResult = '${{ needs.lint.outputs.result }}' || 'skipped';
-            const lintDetails = `${{ needs.lint.outputs.details }}` || '';
+            const lintResult = process.env.LINT_RESULT || 'skipped';
+            const lintDetails = process.env.LINT_DETAILS || '';
 
-            const formatResult = '${{ needs.format.outputs.result }}' || 'skipped';
-            const formatDetails = `${{ needs.format.outputs.details }}` || '';
+            const formatResult = process.env.FORMAT_RESULT || 'skipped';
+            const formatDetails = process.env.FORMAT_DETAILS || '';
 
-            const templateResult = '${{ needs.template.outputs.result }}' || 'skipped';
-            const templateDetails = `${{ needs.template.outputs.details }}` || '';
+            const templateResult = process.env.TEMPLATE_RESULT || 'skipped';
+            const templateDetails = process.env.TEMPLATE_DETAILS || '';
 
-            const testResult = '${{ needs.unit-tests.outputs.result }}' || 'skipped';
-            const testDetails = `${{ needs.unit-tests.outputs.details }}` || '';
+            const testResult = process.env.TEST_RESULT || 'skipped';
+            const testDetails = process.env.TEST_DETAILS || '';
 
-            const versionResult = '${{ needs.version-check.outputs.result }}' || 'skipped';
-            const versionDetails = `${{ needs.version-check.outputs.details }}` || '';
+            const versionResult = process.env.VERSION_RESULT || 'skipped';
+            const versionDetails = process.env.VERSION_DETAILS || '';
 
             const getIcon = (result) => {
               if (result === 'success') return '✅';
