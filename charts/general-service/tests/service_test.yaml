@@ -1,0 +1,57 @@
+suite: service tests
+templates:
+  - service.yaml
+tests:
+  - it: should render service with default values
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0].port
+          value: 8080
+      - equal:
+          path: spec.ports[0].targetPort
+          value: http
+
+  - it: should not render service when disabled
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render service with LoadBalancer type
+    set:
+      image:
+        repository: nginx
+      service:
+        type: LoadBalancer
+        port: 80
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: spec.ports[0].port
+          value: 80
+
+  - it: should render service annotations
+    set:
+      image:
+        repository: nginx
+      service:
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    asserts:
+      - equal:
+          path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]
+          value: nlb

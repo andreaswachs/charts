@@ -1,0 +1,330 @@
+suite: deployment tests
+templates:
+  - deployment.yaml
+tests:
+  - it: should render deployment with default values
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.replicas
+          value: 2
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "nginx:1.21"
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 8080
+
+  - it: should render default security context dropping all privileges
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: should not set replicas when HPA is enabled
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      hpa:
+        enabled: true
+    asserts:
+      - isNull:
+          path: spec.replicas
+
+  - it: should render literal environment variables
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      env:
+        literal:
+          MY_VAR: "my-value"
+          ANOTHER_VAR: "another-value"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MY_VAR
+            value: "my-value"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ANOTHER_VAR
+            value: "another-value"
+
+  - it: should render environment variables from ConfigMap
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      env:
+        fromConfigMaps:
+          - configMapName: my-config
+            keys:
+              - key: config-key
+                envName: MY_CONFIG_VAR
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MY_CONFIG_VAR
+            valueFrom:
+              configMapKeyRef:
+                name: my-config
+                key: config-key
+
+  - it: should render environment variables from Secret
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      env:
+        fromSecrets:
+          - secretName: my-secret
+            keys:
+              - key: secret-key
+                envName: MY_SECRET_VAR
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MY_SECRET_VAR
+            valueFrom:
+              secretKeyRef:
+                name: my-secret
+                key: secret-key
+
+  - it: should render command and args
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - "echo hello"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command
+          value:
+            - /bin/sh
+            - -c
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value:
+            - "echo hello"
+
+  - it: should render volumes and volumeMounts
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: my-config
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
+          readOnly: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: config-volume
+            configMap:
+              name: my-config
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: config-volume
+            mountPath: /etc/config
+            readOnly: true
+
+  - it: should render init containers with full features
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      initContainers:
+        - name: init-myservice
+          image:
+            repository: busybox
+            tag: "1.36"
+            pullPolicy: Always
+          command:
+            - sh
+            - -c
+          args:
+            - "echo initializing"
+          env:
+            literal:
+              INIT_VAR: "init-value"
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+      volumes:
+        - name: shared
+          emptyDir: {}
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: init-myservice
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: "busybox:1.36"
+      - equal:
+          path: spec.template.spec.initContainers[0].imagePullPolicy
+          value: Always
+      - equal:
+          path: spec.template.spec.initContainers[0].command
+          value:
+            - sh
+            - -c
+      - equal:
+          path: spec.template.spec.initContainers[0].args
+          value:
+            - "echo initializing"
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: INIT_VAR
+            value: "init-value"
+      - contains:
+          path: spec.template.spec.initContainers[0].volumeMounts
+          content:
+            name: shared
+            mountPath: /shared
+
+  - it: should apply default security context to init containers
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      initContainers:
+        - name: init-myservice
+          image:
+            repository: busybox
+            tag: "1.36"
+          command:
+            - echo
+            - hello
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - contains:
+          path: spec.template.spec.initContainers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: should allow init container to override security context
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      initContainers:
+        - name: init-myservice
+          image:
+            repository: busybox
+            tag: "1.36"
+          command:
+            - echo
+            - hello
+          securityContext:
+            readOnlyRootFilesystem: false
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.readOnlyRootFilesystem
+          value: false
+
+  - it: should render liveness and readiness probes
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 8080
+        initialDelaySeconds: 10
+      readinessProbe:
+        httpGet:
+          path: /ready
+          port: 8080
+        initialDelaySeconds: 5
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /healthz
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /ready
+
+  - it: should render resource requests and limits
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 512Mi
+
+  - it: should render image pull secrets
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+        pullSecrets:
+          - name: my-registry-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.imagePullSecrets
+          content:
+            name: my-registry-secret
+
+  - it: should use chart appVersion as default image tag
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "nginx:1.0.0"

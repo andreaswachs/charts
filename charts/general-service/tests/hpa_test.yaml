@@ -1,0 +1,87 @@
+suite: hpa tests
+templates:
+  - hpa.yaml
+tests:
+  - it: should not render hpa when disabled
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render hpa when enabled with defaults
+    set:
+      image:
+        repository: nginx
+      hpa:
+        enabled: true
+    asserts:
+      - isKind:
+          of: HorizontalPodAutoscaler
+      - equal:
+          path: apiVersion
+          value: autoscaling/v2
+      - equal:
+          path: spec.minReplicas
+          value: 2
+      - equal:
+          path: spec.maxReplicas
+          value: 10
+      - equal:
+          path: spec.metrics[0].resource.name
+          value: cpu
+      - equal:
+          path: spec.metrics[0].resource.target.averageUtilization
+          value: 80
+
+  - it: should render hpa with custom values
+    set:
+      image:
+        repository: nginx
+      hpa:
+        enabled: true
+        minReplicas: 3
+        maxReplicas: 20
+        targetCPUUtilizationPercentage: 70
+    asserts:
+      - equal:
+          path: spec.minReplicas
+          value: 3
+      - equal:
+          path: spec.maxReplicas
+          value: 20
+      - equal:
+          path: spec.metrics[0].resource.target.averageUtilization
+          value: 70
+
+  - it: should render hpa with memory metric
+    set:
+      image:
+        repository: nginx
+      hpa:
+        enabled: true
+        targetMemoryUtilizationPercentage: 75
+    asserts:
+      - equal:
+          path: spec.metrics[1].resource.name
+          value: memory
+      - equal:
+          path: spec.metrics[1].resource.target.averageUtilization
+          value: 75
+
+  - it: should reference the correct deployment
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      hpa:
+        enabled: true
+    asserts:
+      - equal:
+          path: spec.scaleTargetRef.kind
+          value: Deployment
+      - equal:
+          path: spec.scaleTargetRef.name
+          value: my-release-general-service

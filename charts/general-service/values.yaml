@@ -1,0 +1,214 @@
+# General Service Chart - Default Values
+
+# -- Number of replicas for the deployment
+replicas: 2
+
+# -- Image configuration
+image:
+  # -- Container image repository
+  repository: ""
+  # -- Container image tag (defaults to Chart.appVersion if not set)
+  tag: ""
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Image pull secrets for private registries
+  pullSecrets: []
+  #   - name: my-registry-secret
+
+# -- Container port configuration
+containerPort: 8080
+
+# -- Override the container command
+command: []
+#   - /bin/sh
+#   - -c
+
+# -- Override the container arguments
+args: []
+#   - "echo hello && sleep 3600"
+
+# -- Resource requests and limits
+resources: {}
+#   requests:
+#     cpu: 100m
+#     memory: 128Mi
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi
+
+# -- Environment variables
+env:
+  # -- Literal environment variables (key-value pairs)
+  literal: {}
+  #   MY_VAR: "my-value"
+  #   ANOTHER_VAR: "another-value"
+
+  # -- Environment variables from ConfigMaps
+  fromConfigMaps: []
+  #   - configMapName: my-config
+  #     keys:
+  #       - key: config-key
+  #         envName: MY_CONFIG_VAR  # optional, defaults to key name
+
+  # -- Environment variables from Secrets
+  fromSecrets: []
+  #   - secretName: my-secret
+  #     keys:
+  #       - key: secret-key
+  #         envName: MY_SECRET_VAR  # optional, defaults to key name
+
+# -- Volume mounts for the container
+volumeMounts: []
+#   - name: config-volume
+#     mountPath: /etc/config
+#     readOnly: true
+
+# -- Volumes for the pod
+volumes: []
+#   - name: config-volume
+#     configMap:
+#       name: my-config
+#   - name: secret-volume
+#     secret:
+#       secretName: my-secret
+#   - name: empty-dir
+#     emptyDir: {}
+#   - name: pvc-volume
+#     persistentVolumeClaim:
+#       claimName: my-pvc
+
+# -- Init containers configuration
+initContainers: []
+#   - name: init-myservice
+#     image:
+#       repository: busybox
+#       tag: "1.36"
+#       pullPolicy: IfNotPresent
+#     command:
+#       - sh
+#       - -c
+#       - "echo initializing..."
+#     args: []
+#     env:
+#       literal:
+#         INIT_VAR: "init-value"
+#       fromConfigMaps: []
+#       fromSecrets: []
+#     volumeMounts: []
+#     resources: {}
+#     securityContext: {}  # Inherits default if not specified
+
+# -- Liveness probe configuration
+livenessProbe: {}
+#   httpGet:
+#     path: /healthz
+#     port: 8080
+#   initialDelaySeconds: 10
+#   periodSeconds: 10
+
+# -- Readiness probe configuration
+readinessProbe: {}
+#   httpGet:
+#     path: /ready
+#     port: 8080
+#   initialDelaySeconds: 5
+#   periodSeconds: 5
+
+# -- Startup probe configuration
+startupProbe: {}
+#   httpGet:
+#     path: /healthz
+#     port: 8080
+#   failureThreshold: 30
+#   periodSeconds: 10
+
+# -- Service configuration
+service:
+  # -- Enable service creation
+  enabled: true
+  # -- Service type (ClusterIP, LoadBalancer, NodePort)
+  type: ClusterIP
+  # -- Service port
+  port: 8080
+  # -- Additional service annotations
+  annotations: {}
+
+# -- HTTPRoute configuration (Gateway API)
+httpRoute:
+  # -- Enable HTTPRoute creation
+  enabled: false
+  # -- Gateway reference (required when enabled)
+  gateway:
+    # -- Gateway name
+    name: ""
+    # -- Gateway namespace (defaults to same namespace as HTTPRoute)
+    namespace: ""
+  # -- Hostnames for the route
+  hostnames: []
+  #   - myapp.example.com
+  # -- HTTP route rules
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+  # -- Additional HTTPRoute annotations
+  annotations: {}
+
+# -- Horizontal Pod Autoscaler configuration
+hpa:
+  # -- Enable HPA creation
+  enabled: false
+  # -- Minimum number of replicas
+  minReplicas: 2
+  # -- Maximum number of replicas
+  maxReplicas: 10
+  # -- Target CPU utilization percentage
+  targetCPUUtilizationPercentage: 80
+  # -- Target memory utilization percentage (optional)
+  targetMemoryUtilizationPercentage: null
+
+# -- Pod Disruption Budget configuration
+pdb:
+  # -- Enable PDB creation
+  enabled: false
+  # -- Minimum available pods (can be number or percentage)
+  minAvailable: 1
+  # -- Maximum unavailable pods (alternative to minAvailable)
+  maxUnavailable: null
+
+# -- Pod-level security context
+podSecurityContext:
+  runAsNonRoot: true
+
+# -- Container-level security context (applied to main container and init containers by default)
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# -- Node selector for pod scheduling
+nodeSelector: {}
+
+# -- Tolerations for pod scheduling
+tolerations: []
+
+# -- Affinity rules for pod scheduling
+affinity: {}
+
+# -- Additional pod annotations
+podAnnotations: {}
+
+# -- Additional pod labels
+podLabels: {}
+
+# -- Service account configuration
+serviceAccount:
+  # -- Create a service account
+  create: false
+  # -- Service account name (generated if not set and create is true)
+  name: ""
+  # -- Service account annotations
+  annotations: {}
