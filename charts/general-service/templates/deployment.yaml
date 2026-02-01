@@ -48,7 +48,7 @@ spec:
           args:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if or .env.literal .env.fromConfigMaps .env.fromSecrets }}
+          {{- if and .env (or .env.literal .env.fromConfigMaps .env.fromSecrets) }}
           env:
             {{- range $key, $value := .env.literal }}
             - name: {{ $key }}
