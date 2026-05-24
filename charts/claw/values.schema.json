@@ -297,7 +297,6 @@
           },
           "image": {
             "type": "object",
-            "additionalProperties": false,
             "required": ["repository"],
             "properties": {
               "repository": {
