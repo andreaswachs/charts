@@ -1,0 +1,146 @@
+# Claw Chart - Default Values
+
+# -- Number of replicas for the deployment
+replicaCount: 1
+
+# -- Image configuration
+image:
+  # -- Container image repository
+  repository: ""
+  # -- Container image tag (defaults to Chart.appVersion if not set)
+  tag: ""
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+#   - name: my-registry-secret
+
+# -- Override the container command
+command: []
+#   - /bin/sh
+#   - -c
+
+# -- Override the container arguments
+args: []
+
+# -- Resource requests and limits
+resources: {}
+#   requests:
+#     cpu: 100m
+#     memory: 128Mi
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi
+
+# -- Volume mounts for the container
+volumeMounts: []
+#   - name: extra-volume
+#     mountPath: /extra
+#     readOnly: true
+
+# -- Volumes for the pod
+volumes: []
+#   - name: extra-volume
+#     configMap:
+#       name: my-config
+
+# -- Environment variables
+env: []
+#   - name: MY_VAR
+#     value: "my-value"
+#   - name: SECRET_VAR
+#     valueFrom:
+#       secretKeyRef:
+#         name: my-secret
+#         key: secret-key
+
+# -- Pod-level security context
+podSecurityContext:
+  runAsNonRoot: true
+
+# -- Container-level security context
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# -- Persistence configuration
+persistence:
+  # -- Enable PVC creation
+  enabled: false
+  # -- Use an existing PVC (mutually exclusive with enabled)
+  existingClaim: ""
+  # -- PVC size
+  size: 10Gi
+  # -- PVC access modes
+  accessModes:
+    - ReadWriteOnce
+  # -- PVC storage class name
+  storageClassName: ""
+  # -- Mount path for the PVC
+  mountPath: /workspace
+
+# -- Service account configuration
+serviceAccount:
+  # -- Create a service account
+  create: false
+  # -- Service account name (generated if not set and create is true)
+  name: ""
+  # -- Service account annotations
+  annotations: {}
+  # -- Service account labels
+  labels: {}
+
+# -- RBAC configuration
+rbac:
+  # -- Create RBAC resources
+  create: false
+  # -- Namespaced role configuration
+  role:
+    # -- Role rules
+    rules: []
+    #   - apiGroups: [""]
+    #     resources: ["pods"]
+    #     verbs: ["get", "list", "watch"]
+  # -- ClusterRole configuration
+  clusterRole:
+    # -- ClusterRole rules
+    rules: []
+    #   - apiGroups: [""]
+    #     resources: ["nodes"]
+    #     verbs: ["get", "list", "watch"]
+
+# -- Deployment configuration
+deployment:
+  # -- Deployment labels
+  labels: {}
+  # -- Deployment annotations
+  annotations: {}
+  # -- Pod labels
+  podLabels: {}
+  # -- Pod annotations
+  podAnnotations: {}
+
+# -- Node selector for pod scheduling
+nodeSelector: {}
+
+# -- Tolerations for pod scheduling
+tolerations: []
+
+# -- Affinity rules for pod scheduling
+affinity: {}
+
+# -- Override the name of the chart
+nameOverride: ""
+
+# -- Override the full name of the release
+fullnameOverride: ""
+
+# -- Common labels added to all resources
+commonLabels: {}
+#   team: claw-bots
+
+# -- Common annotations added to all resources
+commonAnnotations: {}
