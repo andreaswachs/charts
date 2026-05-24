@@ -1,0 +1,28 @@
+suite: clusterrolebinding tests
+templates:
+  - clusterrolebinding.yaml
+tests:
+  - it: should render clusterrolebinding when clusterRole has rules
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      serviceAccount:
+        create: true
+      rbac:
+        create: true
+        clusterRole:
+          rules:
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["get"]
+    asserts:
+      - isKind:
+          of: ClusterRoleBinding
+      - equal:
+          path: roleRef.kind
+          value: ClusterRole
+      - equal:
+          path: subjects[0].kind
+          value: ServiceAccount

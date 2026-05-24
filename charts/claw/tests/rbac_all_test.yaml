@@ -1,0 +1,30 @@
+suite: rbac all four resources tests
+templates:
+  - role.yaml
+  - rolebinding.yaml
+  - clusterrole.yaml
+  - clusterrolebinding.yaml
+tests:
+  - it: should render all four RBAC resources when both have rules
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      serviceAccount:
+        create: true
+      rbac:
+        create: true
+        role:
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get"]
+        clusterRole:
+          rules:
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["get"]
+    asserts:
+      - hasDocuments:
+          count: 1

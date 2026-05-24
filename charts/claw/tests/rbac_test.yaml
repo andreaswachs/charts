@@ -1,0 +1,24 @@
+suite: rbac disabled tests
+templates:
+  - role.yaml
+  - rolebinding.yaml
+  - clusterrole.yaml
+  - clusterrolebinding.yaml
+tests:
+  - it: should not render role when rbac is disabled
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render role when rbac.create is true but role.rules is empty
+    set:
+      image:
+        repository: nginx
+      rbac:
+        create: true
+    asserts:
+      - hasDocuments:
+          count: 0
