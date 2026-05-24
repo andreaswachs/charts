@@ -16,7 +16,6 @@
       "properties": {
         "repository": {
           "type": "string",
-          "minLength": 1,
           "description": "Container image repository"
         },
         "tag": {
