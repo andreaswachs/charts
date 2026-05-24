@@ -1,0 +1,93 @@
+suite: httproute tests
+templates:
+  - httproute.yaml
+tests:
+  - it: should not render httproute when disabled
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render httproute when enabled
+    set:
+      image:
+        repository: nginx
+      httpRoute:
+        enabled: true
+        gateway:
+          name: my-gateway
+          namespace: gateway-ns
+        hostnames:
+          - myapp.example.com
+    asserts:
+      - isKind:
+          of: HTTPRoute
+      - equal:
+          path: spec.parentRefs[0].name
+          value: my-gateway
+      - equal:
+          path: spec.parentRefs[0].namespace
+          value: gateway-ns
+      - contains:
+          path: spec.hostnames
+          content: myapp.example.com
+
+  - it: should render httproute with default rules
+    set:
+      image:
+        repository: nginx
+      httpRoute:
+        enabled: true
+        gateway:
+          name: my-gateway
+    asserts:
+      - equal:
+          path: spec.rules[0].matches[0].path.type
+          value: PathPrefix
+      - equal:
+          path: spec.rules[0].matches[0].path.value
+          value: /
+
+  - it: should use service port in backendRefs
+    set:
+      image:
+        repository: nginx
+      service:
+        port: 3000
+      httpRoute:
+        enabled: true
+        gateway:
+          name: my-gateway
+    asserts:
+      - equal:
+          path: spec.rules[0].backendRefs[0].port
+          value: 3000
+
+  - it: should render httproute annotations
+    set:
+      image:
+        repository: nginx
+      httpRoute:
+        enabled: true
+        gateway:
+          name: my-gateway
+        annotations:
+          custom-annotation: custom-value
+    asserts:
+      - equal:
+          path: metadata.annotations["custom-annotation"]
+          value: custom-value
+
+  - it: should render httproute without gateway namespace if not specified
+    set:
+      image:
+        repository: nginx
+      httpRoute:
+        enabled: true
+        gateway:
+          name: my-gateway
+    asserts:
+      - isNull:
+          path: spec.parentRefs[0].namespace

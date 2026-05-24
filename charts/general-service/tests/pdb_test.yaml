@@ -1,0 +1,71 @@
+suite: pdb tests
+templates:
+  - pdb.yaml
+tests:
+  - it: should not render pdb when disabled
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render pdb when enabled with minAvailable
+    set:
+      image:
+        repository: nginx
+      pdb:
+        enabled: true
+        minAvailable: 1
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: apiVersion
+          value: policy/v1
+      - equal:
+          path: spec.minAvailable
+          value: 1
+
+  - it: should render pdb with maxUnavailable
+    set:
+      image:
+        repository: nginx
+      pdb:
+        enabled: true
+        minAvailable: null
+        maxUnavailable: 1
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+      - isNull:
+          path: spec.minAvailable
+
+  - it: should render pdb with percentage minAvailable
+    set:
+      image:
+        repository: nginx
+      pdb:
+        enabled: true
+        minAvailable: "50%"
+    asserts:
+      - equal:
+          path: spec.minAvailable
+          value: "50%"
+
+  - it: should use correct selector labels
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      pdb:
+        enabled: true
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: general-service
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/instance"]
+          value: my-release

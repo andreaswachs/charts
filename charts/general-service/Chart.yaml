@@ -1,0 +1,6 @@
+apiVersion: v2
+name: general-service
+description: A general-purpose Helm chart for deploying containerized services with HTTPRoute, Service, HPA, and PDB support
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
