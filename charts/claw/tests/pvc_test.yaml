@@ -80,3 +80,21 @@ tests:
     asserts:
       - isNull:
           path: spec.storageClassName
+
+  - it: should include common labels and annotations
+    set:
+      image:
+        repository: nginx
+      persistence:
+        enabled: true
+      commonLabels:
+        team: claw-bots
+      commonAnnotations:
+        managed-by: platform-team
+    asserts:
+      - equal:
+          path: metadata.labels["team"]
+          value: claw-bots
+      - equal:
+          path: metadata.annotations["managed-by"]
+          value: platform-team

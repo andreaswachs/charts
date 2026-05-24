@@ -15,6 +15,10 @@ tests:
             - apiGroups: [""]
               resources: ["pods"]
               verbs: ["get", "list", "watch"]
+      commonLabels:
+        team: claw-bots
+      commonAnnotations:
+        managed-by: platform-team
     asserts:
       - isKind:
           of: Role
@@ -30,3 +34,9 @@ tests:
       - equal:
           path: rules[0].verbs[0]
           value: get
+      - equal:
+          path: metadata.labels["team"]
+          value: claw-bots
+      - equal:
+          path: metadata.annotations["managed-by"]
+          value: platform-team
