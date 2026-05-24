@@ -1,0 +1,23 @@
+suite: clusterrole tests
+templates:
+  - clusterrole.yaml
+tests:
+  - it: should render clusterrole when clusterRole has rules
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      rbac:
+        create: true
+        clusterRole:
+          rules:
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["get", "list"]
+    asserts:
+      - isKind:
+          of: ClusterRole
+      - equal:
+          path: rules[0].resources[0]
+          value: nodes

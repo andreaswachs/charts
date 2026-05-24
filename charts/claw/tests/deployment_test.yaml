@@ -1,0 +1,345 @@
+suite: deployment tests
+templates:
+  - deployment.yaml
+tests:
+  - it: should render deployment with default values
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "nginx:1.21"
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: IfNotPresent
+
+  - it: should render default security context with all capabilities dropped
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: should render workspace PVC volume and volumeMount
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].name
+          value: workspace
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: my-release-claw
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].name
+          value: workspace
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /workspace
+
+  - it: should use custom mountPath
+    set:
+      image:
+        repository: nginx
+      persistence:
+        mountPath: /data
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /data
+
+  - it: should reference existingClaim when set
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      persistence:
+        existingClaim: my-existing-pvc
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: my-existing-pvc
+
+  - it: should render command and args
+    set:
+      image:
+        repository: nginx
+        tag: "1.21"
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - "echo hello"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command
+          value:
+            - /bin/sh
+            - -c
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value:
+            - "echo hello"
+
+  - it: should render environment variables
+    set:
+      image:
+        repository: nginx
+      env:
+        - name: MY_VAR
+          value: "my-value"
+        - name: SECRET_VAR
+          valueFrom:
+            secretKeyRef:
+              name: my-secret
+              key: secret-key
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MY_VAR
+            value: "my-value"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SECRET_VAR
+            valueFrom:
+              secretKeyRef:
+                name: my-secret
+                key: secret-key
+
+  - it: should render additional volumes and volumeMounts
+    set:
+      image:
+        repository: nginx
+      volumes:
+        - name: config-volume
+          configMap:
+            name: my-config
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
+          readOnly: true
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].name
+          value: workspace
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: config-volume
+            configMap:
+              name: my-config
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: config-volume
+            mountPath: /etc/config
+            readOnly: true
+
+  - it: should render resource requests and limits
+    set:
+      image:
+        repository: nginx
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 512Mi
+
+  - it: should render image pull secrets
+    set:
+      image:
+        repository: nginx
+      imagePullSecrets:
+        - name: my-registry-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.imagePullSecrets
+          content:
+            name: my-registry-secret
+
+  - it: should use chart appVersion as default image tag
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "nginx:1.0.0"
+
+  - it: should render deployment annotations
+    set:
+      image:
+        repository: nginx
+      deployment:
+        annotations:
+          deploy-source: helm
+    asserts:
+      - equal:
+          path: metadata.annotations["deploy-source"]
+          value: helm
+
+  - it: should render deployment labels
+    set:
+      image:
+        repository: nginx
+      deployment:
+        labels:
+          custom-deploy-label: custom-deploy-value
+    asserts:
+      - equal:
+          path: metadata.labels["custom-deploy-label"]
+          value: custom-deploy-value
+
+  - it: should render pod labels and annotations
+    set:
+      image:
+        repository: nginx
+      deployment:
+        podLabels:
+          pod-custom-label: pod-value
+        podAnnotations:
+          pod-custom-annotation: pod-anno-value
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["pod-custom-label"]
+          value: pod-value
+      - equal:
+          path: spec.template.metadata.annotations["pod-custom-annotation"]
+          value: pod-anno-value
+
+  - it: should include common labels on pod template
+    set:
+      image:
+        repository: nginx
+      commonLabels:
+        team: claw-bots
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["team"]
+          value: claw-bots
+
+  - it: should merge deployment and common annotations on deployment metadata
+    set:
+      image:
+        repository: nginx
+      deployment:
+        annotations:
+          deploy-key: deploy-value
+      commonAnnotations:
+        common-key: common-value
+    asserts:
+      - equal:
+          path: metadata.annotations["deploy-key"]
+          value: deploy-value
+      - equal:
+          path: metadata.annotations["common-key"]
+          value: common-value
+
+  - it: should merge pod and common annotations on pod template
+    set:
+      image:
+        repository: nginx
+      deployment:
+        podAnnotations:
+          pod-key: pod-value
+      commonAnnotations:
+        common-key: common-value
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["pod-key"]
+          value: pod-value
+      - equal:
+          path: spec.template.metadata.annotations["common-key"]
+          value: common-value
+
+  - it: should not set serviceAccountName when create is false
+    set:
+      image:
+        repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.serviceAccountName
+
+  - it: should set serviceAccountName when create is true
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      serviceAccount:
+        create: true
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: my-release-claw
+
+  - it: should render nodeSelector, tolerations, and affinity
+    set:
+      image:
+        repository: nginx
+      nodeSelector:
+        disktype: ssd
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: claw
+          effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - arm64
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.disktype
+          value: ssd
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            key: dedicated
+            operator: Equal
+            value: claw
+            effect: NoSchedule
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key
+          value: kubernetes.io/arch

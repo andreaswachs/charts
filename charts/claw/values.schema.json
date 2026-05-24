@@ -1,0 +1,287 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Number of replicas for the deployment"
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "description": "Container image repository"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Container image tag"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"],
+          "default": "IfNotPresent",
+          "description": "Image pull policy"
+        }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["name"]
+      },
+      "description": "Image pull secrets for private registries"
+    },
+    "command": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Override the container command"
+    },
+    "args": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Override the container arguments"
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Resource requests and limits"
+    },
+    "volumeMounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Volume mounts for the container"
+    },
+    "volumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Volumes for the pod"
+    },
+    "env": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Environment variables"
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Pod-level security context"
+    },
+    "securityContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Container-level security context"
+    },
+    "persistence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable PVC creation"
+        },
+        "existingClaim": {
+          "type": "string",
+          "description": "Use an existing PVC"
+        },
+        "size": {
+          "type": "string",
+          "default": "10Gi",
+          "description": "PVC size"
+        },
+        "accessModes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany", "ReadWriteOncePod"]
+          },
+          "description": "PVC access modes"
+        },
+        "storageClassName": {
+          "type": "string",
+          "description": "PVC storage class name"
+        },
+        "mountPath": {
+          "type": "string",
+          "default": "/workspace",
+          "description": "Mount path for the PVC"
+        }
+      },
+      "description": "Persistence configuration"
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "default": false,
+          "description": "Create a service account"
+        },
+        "name": {
+          "type": "string",
+          "description": "Service account name"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Service account annotations"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Service account labels"
+        }
+      },
+      "description": "Service account configuration"
+    },
+    "rbac": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "default": false,
+          "description": "Create RBAC resources"
+        },
+        "role": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "description": "Role rules"
+            }
+          },
+          "description": "Namespaced role configuration"
+        },
+        "clusterRole": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "description": "ClusterRole rules"
+            }
+          },
+          "description": "ClusterRole configuration"
+        }
+      },
+      "description": "RBAC configuration"
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Deployment labels"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Deployment annotations"
+        },
+        "podLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Pod labels"
+        },
+        "podAnnotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Pod annotations"
+        }
+      },
+      "description": "Deployment configuration"
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Node selector for pod scheduling"
+    },
+    "tolerations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Tolerations for pod scheduling"
+    },
+    "affinity": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Affinity rules for pod scheduling"
+    },
+    "nameOverride": {
+      "type": "string",
+      "description": "Override the name of the chart"
+    },
+    "fullnameOverride": {
+      "type": "string",
+      "description": "Override the full name of the release"
+    },
+    "commonLabels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Common labels added to all resources"
+    },
+    "commonAnnotations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Common annotations added to all resources"
+    }
+  },
+  "required": ["image"]
+}

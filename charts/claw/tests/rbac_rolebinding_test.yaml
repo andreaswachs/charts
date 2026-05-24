@@ -1,0 +1,28 @@
+suite: rolebinding tests
+templates:
+  - rolebinding.yaml
+tests:
+  - it: should render rolebinding when rbac.create is true with role rules
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      serviceAccount:
+        create: true
+      rbac:
+        create: true
+        role:
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get"]
+    asserts:
+      - isKind:
+          of: RoleBinding
+      - equal:
+          path: roleRef.kind
+          value: Role
+      - equal:
+          path: subjects[0].kind
+          value: ServiceAccount

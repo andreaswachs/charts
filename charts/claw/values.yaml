@@ -1,0 +1,233 @@
+# Claw Chart - Default Values
+#
+# This chart deploys a single-replica claw bot with a hardened security profile,
+# optional persistent storage, and configurable Kubernetes RBAC.
+#
+# Quick start (minimal configuration):
+#   helm install my-claw . --set image.repository=my-registry/claw-bot --set persistence.enabled=true
+#
+# For production, consider enabling:
+#   - persistence.enabled (PVC for bot workspace)
+#   - serviceAccount.create (dedicated service account)
+#   - rbac.create (with role and/or clusterRole rules)
+#   - resources (CPU/memory requests and limits)
+
+# -- Number of replicas. The chart uses Recreate strategy, so scaling beyond 1
+# is only safe with shared-nothing workloads or external coordination.
+replicaCount: 1
+
+# -- Container image configuration. repository is required.
+image:
+  # -- Container image repository (e.g. my-registry/claw-bot)
+  repository: ""
+  # -- Container image tag. Defaults to Chart.appVersion when empty.
+  # Override this to pin a specific version (recommended for production).
+  tag: ""
+  # -- Image pull policy: Always, IfNotPresent, or Never
+  pullPolicy: IfNotPresent
+
+# -- Image pull secrets for private container registries.
+# Each entry must have a `name` referencing a pre-existing Secret in the namespace.
+imagePullSecrets: []
+#   - name: my-registry-secret
+
+# -- Override the container entrypoint. If empty, the image's default ENTRYPOINT is used.
+command: []
+#   - /bin/sh
+#   - -c
+
+# -- Arguments passed to the container command. If empty, the image's default CMD is used.
+args: []
+#   - "claw-bot --config /workspace/config.yaml"
+
+# -- Resource requests and limits for the claw bot container.
+# Setting requests ensures QoS and scheduling; limits prevent resource starvation.
+resources: {}
+#   requests:
+#     cpu: 100m
+#     memory: 128Mi
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi
+
+# -- Additional volume mounts attached to the claw bot container.
+# The workspace PVC (if enabled) is always mounted at persistence.mountPath.
+# Use this for ConfigMaps, Secrets, or other volumes your bot needs.
+volumeMounts: []
+#   - name: bot-config
+#     mountPath: /etc/claw
+#     readOnly: true
+
+# -- Additional volumes attached to the pod.
+# The workspace PVC volume is always present (referencing either a chart-created
+# PVC or an existing claim).
+volumes: []
+#   - name: bot-config
+#     configMap:
+#       name: claw-config
+#   - name: bot-secrets
+#     secret:
+#       secretName: claw-secrets
+
+# -- Environment variables injected into the claw bot container.
+# Supports both literal values and valueFrom references (ConfigMap, Secret, FieldRef, etc.).
+env: []
+#   - name: CLAW_ENV
+#     value: "production"
+#   - name: CLAW_TOKEN
+#     valueFrom:
+#       secretKeyRef:
+#         name: claw-secrets
+#         key: token
+
+# -- Pod-level security context applied to all containers in the pod.
+# Override to set fsGroup, runAsUser, sysctls, etc.
+podSecurityContext:
+  # -- Require the container to run as a non-root user (UID != 0)
+  runAsNonRoot: true
+
+# -- Container-level security context. By default the chart enforces a
+# locked-down profile: read-only root filesystem, no privilege escalation,
+# and all Linux capabilities dropped. Override individual fields as needed;
+# the defaults are safe for most workloads.
+securityContext:
+  # -- Mount the container's root filesystem as read-only (prevents writes outside volumes)
+  readOnlyRootFilesystem: true
+  # -- Prevent the container from gaining more privileges than its parent process
+  allowPrivilegeEscalation: false
+  # -- Linux capabilities assigned to the container
+  capabilities:
+    # -- Drop all capabilities. Add back only what the bot requires (e.g. NET_BIND_SERVICE)
+    drop:
+      - ALL
+
+# -- Persistence configuration for the bot's workspace.
+# The workspace volume stores bot state, cached data, logs, etc.
+persistence:
+  # -- Enable creation of a PersistentVolumeClaim for the workspace.
+  # Set to true to have the chart manage the PVC lifecycle.
+  enabled: false
+  # -- Name of an existing PVC to use instead of creating one.
+  # When set, the chart skips PVC creation and uses this claim.
+  # Mutually exclusive with enabled (takes precedence).
+  existingClaim: ""
+  # -- Requested storage size for the chart-managed PVC (ignored when existingClaim is set)
+  size: 10Gi
+  # -- Access modes for the chart-managed PVC. ReadWriteOnce (RWO) is sufficient for
+  # a single-replica deployment and is the most widely supported mode.
+  # Options: ReadWriteOnce, ReadOnlyMany, ReadWriteMany, ReadWriteOncePod
+  accessModes:
+    - ReadWriteOnce
+  # -- Storage class name for the PVC. Leave empty to use the cluster's default StorageClass.
+  storageClassName: ""
+  # -- Filesystem path where the workspace PVC is mounted inside the container
+  mountPath: /workspace
+
+# -- Service account configuration.
+# A dedicated service account is required when enabling RBAC (rbac.create).
+serviceAccount:
+  # -- Create a ServiceAccount for the claw bot deployment.
+  # Set to true to enable; required if rbac.create is true.
+  create: false
+  # -- Name of the ServiceAccount. If empty and create is true, the chart
+  # generates a name from the release (release-name-claw).
+  # If create is false, set this to the name of an existing ServiceAccount to use.
+  name: ""
+  # -- Annotations added to the ServiceAccount (e.g. IAM role ARN for EKS).
+  # Merged with commonAnnotations.
+  annotations: {}
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/claw-role
+  # -- Labels added to the ServiceAccount. Merged with commonLabels.
+  labels: {}
+
+# -- RBAC configuration for the claw bot.
+# Creates Role, RoleBinding, ClusterRole, and ClusterRoleBinding resources
+# based on the rules you define. The ServiceAccount (serviceAccount.create)
+# must be enabled for RBAC to be useful.
+rbac:
+  # -- Enable creation of RBAC resources. When true, role and/or clusterRole
+  # rules are rendered into Kubernetes RBAC resources.
+  create: false
+  # -- Namespaced Role and RoleBinding.
+  # Grants permissions scoped to the release namespace.
+  role:
+    # -- Role rules. Each entry is a standard Kubernetes RBAC rule with
+    # apiGroups, resources, and verbs. Leave empty to skip Role creation.
+    rules: []
+    #   - apiGroups: [""]
+    #     resources: ["pods", "configmaps"]
+    #     verbs: ["get", "list", "watch"]
+    #   - apiGroups: ["batch"]
+    #     resources: ["jobs"]
+    #     verbs: ["create", "get", "list", "delete"]
+  # -- Cluster-scoped ClusterRole and ClusterRoleBinding.
+  # Grants permissions across all namespaces.
+  clusterRole:
+    # -- ClusterRole rules. Same format as role.rules. Leave empty to skip
+    # ClusterRole creation.
+    rules: []
+    #   - apiGroups: [""]
+    #     resources: ["nodes", "persistentvolumes"]
+    #     verbs: ["get", "list", "watch"]
+
+# -- Deployment configuration for labels and annotations on the Deployment resource
+# and its pod template. These are merged with commonLabels/commonAnnotations.
+deployment:
+  # -- Labels added to the Deployment resource metadata
+  labels: {}
+  #   app-part-of: claw-platform
+  # -- Annotations added to the Deployment resource metadata
+  annotations: {}
+  #   deploy-tool: helm
+  # -- Labels added to the pod template (in addition to selector labels and commonLabels)
+  podLabels: {}
+  #   version: "2.0"
+  # -- Annotations added to the pod template (in addition to commonAnnotations)
+  podAnnotations: {}
+  #   prometheus.io/scrape: "true"
+  #   prometheus.io/port: "9090"
+
+# -- Node selector constrains the pod to nodes matching these labels.
+nodeSelector: {}
+#   disktype: ssd
+#   kubernetes.io/arch: amd64
+
+# -- Tolerations allow the pod to schedule on nodes with matching taints.
+tolerations: []
+#   - key: dedicated
+#     operator: Equal
+#     value: claw
+#     effect: NoSchedule
+
+# -- Affinity rules control pod placement (node affinity, pod anti-affinity, etc.).
+affinity: {}
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#         - matchExpressions:
+#             - key: topology.kubernetes.io/zone
+#               operator: In
+#               values:
+#                 - us-east-1a
+
+# -- Override the name of the chart (used in resource name generation).
+# Defaults to .Chart.Name ("claw").
+nameOverride: ""
+
+# -- Override the full resource name entirely. When set, this replaces
+# the release-name-chart pattern used for all generated resources.
+fullnameOverride: ""
+
+# -- Labels added to ALL resources created by this chart.
+# Merged with resource-specific labels (e.g. serviceAccount.labels, deployment.labels).
+commonLabels: {}
+#   team: claw-bots
+#   environment: production
+
+# -- Annotations added to ALL resources created by this chart.
+# Merged with resource-specific annotations. For the ServiceAccount and Deployment,
+# both the resource-specific and common annotation sources are merged into a single
+# annotations block.
+commonAnnotations: {}
+#   managed-by: platform-team
+#   owner: sre
