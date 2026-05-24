@@ -284,6 +284,77 @@
       "additionalProperties": true,
       "description": "Affinity rules for pod scheduling"
     },
+    "initContainers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "image"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Init container name"
+          },
+          "image": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repository"],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "description": "Init container image repository"
+              },
+              "tag": {
+                "type": "string",
+                "description": "Init container image tag"
+              },
+              "pullPolicy": {
+                "type": "string",
+                "enum": ["Always", "IfNotPresent", "Never"],
+                "description": "Init container image pull policy"
+              }
+            }
+          },
+          "command": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Init container command"
+          },
+          "args": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Init container arguments"
+          },
+          "volumeMounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Init container volume mounts"
+          },
+          "env": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Init container environment variables"
+          },
+          "resources": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Init container resource requests and limits"
+          },
+          "securityContext": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Init container security context"
+          }
+        }
+      },
+      "description": "Init containers that run before the main container"
+    },
     "nameOverride": {
       "type": "string",
       "description": "Override the name of the chart"

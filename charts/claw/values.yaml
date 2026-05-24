@@ -214,6 +214,37 @@ affinity: {}
 #               values:
 #                 - us-east-1a
 
+# -- Init containers that run to completion before the main container starts.
+# Each init container supports its own image, command, args, volumeMounts, env, resources, and securityContext.
+# The workspace PVC volume and any additional volumes are available to init containers.
+initContainers: []
+#   - name: init-setup
+#     image:
+#       repository: busybox
+#       tag: "latest"
+#       pullPolicy: IfNotPresent
+#     command:
+#       - /bin/sh
+#       - -c
+#     args:
+#       - "echo init && sleep 5"
+#     volumeMounts:
+#       - name: workspace
+#         mountPath: /workspace
+#     env:
+#       - name: INIT_VAR
+#         value: "init-value"
+#     resources:
+#       requests:
+#         cpu: 50m
+#         memory: 64Mi
+#       limits:
+#         cpu: 100m
+#         memory: 128Mi
+#     securityContext:
+#       readOnlyRootFilesystem: true
+#       allowPrivilegeEscalation: false
+
 # -- Override the name of the chart (used in resource name generation).
 # Defaults to .Chart.Name ("claw").
 nameOverride: ""
