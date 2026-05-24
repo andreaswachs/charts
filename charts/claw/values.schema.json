@@ -89,6 +89,30 @@
     "podSecurityContext": {
       "type": "object",
       "additionalProperties": true,
+      "properties": {
+        "runAsNonRoot": {
+          "type": "boolean",
+          "default": true,
+          "description": "Require non-root execution"
+        },
+        "runAsUser": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1000,
+          "description": "UID for container processes"
+        },
+        "runAsGroup": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1000,
+          "description": "GID for container processes"
+        },
+        "fsGroup": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Filesystem group for volume mounts"
+        }
+      },
       "description": "Pod-level security context"
     },
     "securityContext": {
