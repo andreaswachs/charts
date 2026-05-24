@@ -85,6 +85,10 @@ env: []
 podSecurityContext:
   # -- Require the container to run as a non-root user (UID != 0)
   runAsNonRoot: true
+  # -- The UID for all container processes. Defaults to 1000.
+  runAsUser: 1000
+  # -- The GID for all container processes. Defaults to 1000.
+  runAsGroup: 1000
 
 # -- Container-level security context. By default the chart enforces a
 # locked-down profile: read-only root filesystem, no privilege escalation,
