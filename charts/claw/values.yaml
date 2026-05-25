@@ -195,6 +195,21 @@ deployment:
   #   prometheus.io/scrape: "true"
   #   prometheus.io/port: "9090"
 
+# -- Service configuration for exposing the claw bot's HTTP endpoint.
+service:
+  # -- Enable creation of a Service resource.
+  enabled: false
+  # -- Service type: ClusterIP, NodePort, or LoadBalancer.
+  type: ClusterIP
+  # -- Port exposed by the service. This is both the service port and the target
+  # container port. The port is named "http" in the service spec.
+  port: 8080
+  # -- Labels added to the Service. Merged with commonLabels.
+  labels: {}
+  # -- Annotations added to the Service. Merged with commonAnnotations.
+  annotations: {}
+  #   service.beta.kubernetes.io/aws-load-balancer-type: nlb
+
 # -- Node selector constrains the pod to nodes matching these labels.
 nodeSelector: {}
 #   disktype: ssd

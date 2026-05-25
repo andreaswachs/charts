@@ -1,0 +1,122 @@
+suite: service tests
+templates:
+  - service.yaml
+tests:
+  - it: should not render service when disabled
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render service with default values
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: true
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0].port
+          value: 8080
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 8080
+      - equal:
+          path: spec.ports[0].protocol
+          value: TCP
+      - equal:
+          path: spec.ports[0].name
+          value: http
+
+  - it: should use selector labels matching deployment
+    release:
+      name: my-release
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: true
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: claw
+      - equal:
+          path: spec.selector["app.kubernetes.io/instance"]
+          value: my-release
+
+  - it: should render service with custom port
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: true
+        port: 9090
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 9090
+
+  - it: should render service with NodePort type
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: true
+        type: NodePort
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+
+  - it: should render service with custom labels
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: true
+        labels:
+          team: claw-team
+    asserts:
+      - equal:
+          path: metadata.labels["team"]
+          value: claw-team
+
+  - it: should render service annotations
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: true
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    asserts:
+      - equal:
+          path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]
+          value: nlb
+
+  - it: should include common labels and annotations
+    set:
+      image:
+        repository: nginx
+      service:
+        enabled: true
+      commonLabels:
+        team: claw-bots
+      commonAnnotations:
+        managed-by: platform-team
+    asserts:
+      - equal:
+          path: metadata.labels["team"]
+          value: claw-bots
+      - equal:
+          path: metadata.annotations["managed-by"]
+          value: platform-team
