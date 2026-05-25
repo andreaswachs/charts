@@ -1,0 +1,65 @@
+suite: test configmap template
+templates:
+  - configmap.yaml
+release:
+  name: my-release
+  namespace: test-ns
+tests:
+  - it: renders a ConfigMap per job
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello from bun");
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: my-release-claw-jobs-test-job
+      - equal:
+          path: data["test-job.bun.js"]
+          value: "console.log(\"hello from bun\");\n"
+
+  - it: renders multiple ConfigMaps
+    set:
+      jobs:
+        - name: job-a
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("a");
+        - name: job-b
+          schedule: "0 * * * *"
+          script: |
+            console.log("b");
+    asserts:
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: my-release-claw-jobs-job-a
+      - documentIndex: 1
+        equal:
+          path: metadata.name
+          value: my-release-claw-jobs-job-b
+
+  - it: renders commonLabels and commonAnnotations
+    set:
+      commonLabels:
+        team: platform
+      commonAnnotations:
+        description: test annotation
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+    asserts:
+      - equal:
+          path: metadata.labels.team
+          value: platform
+      - equal:
+          path: metadata.annotations.description
+          value: test annotation
