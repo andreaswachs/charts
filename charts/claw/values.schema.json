@@ -3,6 +3,11 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the claw bot deployment"
+    },
     "replicaCount": {
       "type": "integer",
       "minimum": 1,

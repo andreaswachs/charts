@@ -12,6 +12,10 @@
 #   - rbac.create (with role and/or clusterRole rules)
 #   - resources (CPU/memory requests and limits)
 
+# -- Enable or disable the claw bot deployment entirely.
+# When false, no resources are created by this chart.
+enabled: true
+
 # -- Number of replicas. The chart uses Recreate strategy, so scaling beyond 1
 # is only safe with shared-nothing workloads or external coordination.
 replicaCount: 1
