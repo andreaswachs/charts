@@ -1,0 +1,49 @@
+replicaCount: 1
+
+image:
+  repository: oven/bun
+  tag: "1.3.14"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+env: {}
+
+backoffLimit: 3
+restartPolicy: Never
+concurrencyPolicy: Forbid
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 3
+startingDeadlineSeconds:
+timeZone: "Europe/Copenhagen"
+suspend: false
+
+resources: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+commonLabels: {}
+commonAnnotations: {}
+
+jobs: []
