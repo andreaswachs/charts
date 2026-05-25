@@ -1,0 +1,276 @@
+suite: test cronjob template
+templates:
+  - cronjob.yaml
+release:
+  name: my-release
+  namespace: test-ns
+tests:
+  - it: renders a CronJob per job
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: CronJob
+      - equal:
+          path: spec.schedule
+          value: "*/5 * * * *"
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["bun", "run", "/scripts/test-job.bun.js"]
+
+  - it: renders global env vars
+    set:
+      env:
+        LOG_LEVEL: info
+        NODE_ENV: production
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[0]
+          value:
+            name: LOG_LEVEL
+            value: info
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[1]
+          value:
+            name: NODE_ENV
+            value: production
+
+  - it: merges per-job env on top of global env (per-job wins)
+    set:
+      env:
+        SHARED: global-value
+        UNIQUE: global-only
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+          env:
+            SHARED: per-job-value
+            PER_JOB: job-only
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: SHARED
+            value: per-job-value
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: UNIQUE
+            value: global-only
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: PER_JOB
+            value: job-only
+
+  - it: defaults timeZone to Europe/Copenhagen
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+    asserts:
+      - equal:
+          path: spec.timeZone
+          value: Europe/Copenhagen
+
+  - it: respects per-job timeZone override
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+          timeZone: America/New_York
+    asserts:
+      - equal:
+          path: spec.timeZone
+          value: America/New_York
+
+  - it: respects per-job backoffLimit override
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+          backoffLimit: 10
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.backoffLimit
+          value: 10
+
+  - it: supports suspend
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+          suspend: true
+    asserts:
+      - equal:
+          path: spec.suspend
+          value: true
+
+  - it: renders security context defaults
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.securityContext.runAsUser
+          value: 1000
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].securityContext.capabilities.drop
+          value:
+            - ALL
+
+  - it: renders resources
+    set:
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].resources.limits.cpu
+          value: 500m
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].resources.requests.memory
+          value: 128Mi
+
+  - it: renders startingDeadlineSeconds
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+          startingDeadlineSeconds: 120
+    asserts:
+      - equal:
+          path: spec.startingDeadlineSeconds
+          value: 120
+
+  - it: renders concurrencyPolicy
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+          concurrencyPolicy: Allow
+    asserts:
+      - equal:
+          path: spec.concurrencyPolicy
+          value: Allow
+
+  - it: renders multiple jobs
+    set:
+      jobs:
+        - name: job-a
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("a");
+        - name: job-b
+          schedule: "0 * * * *"
+          script: |
+            console.log("b");
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: CronJob
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: my-release-claw-jobs-job-a
+      - documentIndex: 1
+        isKind:
+          of: CronJob
+      - documentIndex: 1
+        equal:
+          path: metadata.name
+          value: my-release-claw-jobs-job-b
+
+  - it: renders nodeSelector
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+          nodeSelector:
+            disktype: ssd
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.nodeSelector.disktype
+          value: ssd
+
+  - it: renders tolerations
+    set:
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+          tolerations:
+            - key: "key1"
+              operator: "Equal"
+              value: "value1"
+              effect: "NoSchedule"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.tolerations[0].key
+          value: key1
+
+  - it: renders commonLabels
+    set:
+      commonLabels:
+        team: platform
+        env: prod
+      jobs:
+        - name: test-job
+          schedule: "*/5 * * * *"
+          script: |
+            console.log("hello");
+    asserts:
+      - isKind:
+          of: CronJob
+      - equal:
+          path: metadata.labels.team
+          value: platform
+      - equal:
+          path: metadata.labels.env
+          value: prod

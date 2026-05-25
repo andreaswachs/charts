@@ -1,0 +1,87 @@
+{{- range .Values.jobs }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "claw-jobs.fullname" $ }}-{{ .name }}
+  labels:
+    {{- include "claw-jobs.labels" $ | nindent 4 }}
+    {{- with $.Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- with $.Values.commonAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  schedule: {{ .schedule | quote }}
+  {{- with .timeZone | default $.Values.timeZone }}
+  timeZone: {{ . | quote }}
+  {{- end }}
+  {{- with .startingDeadlineSeconds | default $.Values.startingDeadlineSeconds }}
+  startingDeadlineSeconds: {{ . }}
+  {{- end }}
+  concurrencyPolicy: {{ .concurrencyPolicy | default $.Values.concurrencyPolicy }}
+  suspend: {{ if hasKey . "suspend" }}{{ .suspend }}{{ else }}{{ $.Values.suspend }}{{ end }}
+  successfulJobsHistoryLimit: {{ .successfulJobsHistoryLimit | default $.Values.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .failedJobsHistoryLimit | default $.Values.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .backoffLimit | default $.Values.backoffLimit }}
+      template:
+        metadata:
+          labels:
+            {{- include "claw-jobs.selectorLabels" $ | nindent 12 }}
+            app.kubernetes.io/component: {{ .name }}
+          {{- with $.Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          serviceAccountName: {{ include "claw-jobs.serviceAccountName" $ }}
+          {{- with $.Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml $.Values.podSecurityContext | nindent 12 }}
+          restartPolicy: {{ .restartPolicy | default $.Values.restartPolicy }}
+          containers:
+            - name: {{ .name }}
+              image: {{ include "claw-jobs.image" $ }}
+              imagePullPolicy: {{ $.Values.image.pullPolicy }}
+              command: ["bun", "run", "/scripts/{{ .name }}.bun.js"]
+              env:
+                {{- range $key, $val := $.Values.env }}
+                - name: {{ $key | quote }}
+                  value: {{ $val | quote }}
+                {{- end }}
+                {{- range $key, $val := .env }}
+                - name: {{ $key | quote }}
+                  value: {{ $val | quote }}
+                {{- end }}
+              securityContext:
+                {{- toYaml $.Values.securityContext | nindent 16 }}
+              resources:
+                {{- toYaml (.resources | default $.Values.resources) | nindent 16 }}
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: script
+              configMap:
+                name: {{ include "claw-jobs.fullname" $ }}-{{ .name }}
+          {{- with .nodeSelector | default $.Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .tolerations | default $.Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .affinity | default $.Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
